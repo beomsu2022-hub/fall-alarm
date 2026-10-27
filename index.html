@@ -224,7 +224,10 @@ h2 { margin: 0; font-size: 17px; }
   keywordEl.addEventListener("change", () => { keywordEl.value = keywordEl.value.trim() || "FALL"; store.set("fa_keyword", keywordEl.value); });
   baudEl.addEventListener("change", () => { store.set("fa_baud", baudEl.value); updateDevice(); });
 
-  function updateDevice() { $("#deviceLine").textContent = "HC-06 · " + baudEl.value + " bps"; }
+  const chromeVer = (navigator.userAgent.match(/Chrome\/(\d+)/) || [])[1];
+  function updateDevice() {
+    $("#deviceLine").textContent = "HC-06 · " + baudEl.value + " bps · " + (chromeVer ? "크롬 " + chromeVer : "크롬 아님");
+  }
   updateDevice();
 
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -389,7 +392,12 @@ h2 { margin: 0; font-size: 17px; }
     }
     setStatus("connecting");
     try {
-      port = await navigator.serial.requestPort();
+      /* HC-06은 표준 블루투스 시리얼(SPP)이라, SPP 기기를 목록에 띄우도록 명시한다 */
+      const SPP = "00001101-0000-1000-8000-00805f9b34fb";
+      port = await navigator.serial.requestPort({
+        filters: [{ bluetoothServiceClassId: SPP }],
+        allowedBluetoothServiceClassIds: [SPP]
+      });
     } catch (e) {
       port = null;
       if (e.name === "NotFoundError") { setStatus("idle"); log("sys", "기기 선택을 취소했어요"); return; }
